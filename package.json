@@ -2,11 +2,11 @@
   "name": "DBAPI-explorer",
   "displayName": "DBAPI Explorer",
   "description": "Browse and edit FS25 DBAPI database files directly from VS Code",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "publisher": "LeGrizzly",
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "https://github.com/LeGrizzly/VS_Code_DBAPI/tree/main"
   },
   "engines": {
     "vscode": "^1.109.0"
@@ -54,7 +54,7 @@
       },
       {
         "command": "DBAPI.addEntry",
-        "title": "DBAPI: Add Entry",
+        "title": "Add Entry",
         "icon": "$(add)"
       },
       {
@@ -108,18 +108,33 @@
           "group": "inline@1"
         },
         {
-          "command": "DBAPI.deleteNamespace",
-          "when": "view == DBAPIDatabaseView && viewItem == namespace",
+          "command": "DBAPI.addEntry",
+          "when": "view == DBAPIDatabaseView && viewItem == object",
+          "group": "inline@1"
+        },
+        {
+          "command": "DBAPI.editEntry",
+          "when": "view == DBAPIDatabaseView && viewItem == object",
           "group": "inline@2"
         },
         {
           "command": "DBAPI.editEntry",
-          "when": "view == DBAPIDatabaseView && viewItem == entry",
+          "when": "view == DBAPIDatabaseView && viewItem == leaf",
           "group": "inline@1"
         },
         {
           "command": "DBAPI.deleteEntry",
-          "when": "view == DBAPIDatabaseView && viewItem == entry",
+          "when": "view == DBAPIDatabaseView && viewItem == object",
+          "group": "inline@3"
+        },
+        {
+          "command": "DBAPI.deleteEntry",
+          "when": "view == DBAPIDatabaseView && viewItem == leaf",
+          "group": "inline@2"
+        },
+        {
+          "command": "DBAPI.deleteNamespace",
+          "when": "view == DBAPIDatabaseView && viewItem == namespace",
           "group": "inline@2"
         }
       ]
@@ -136,7 +151,7 @@
         "DBAPI.dataPath": {
           "type": "string",
           "default": "",
-          "description": "Path to the DBAPI_data directory (e.g. C:/Users/.../savegame1/DBAPI_data). Leave empty for auto-detection."
+          "description": "Path to the DBAPI_data directory."
         }
       }
     }
