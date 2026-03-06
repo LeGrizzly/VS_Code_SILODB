@@ -9,7 +9,8 @@
     "DBAPI: Check availability": {
         "prefix": "dbcheck",
         "body": [
-            "if _G.DBAPI and DBAPI.isReady() then",
+            "local DBAPI = g_globalMods[\"FS25_DBAPI\"]",
+            "if DBAPI and DBAPI.isReady() then",
             "\t$0",
             "end"
         ],
@@ -20,11 +21,12 @@
         "body": [
             "--- DBAPI integration for ${1:MyMod}",
             "local DB_NAMESPACE = \"${2:FS25_$1}\"",
+            "local DBAPI = g_globalMods[\"FS25_DBAPI\"]",
             "",
             "--- Checks if the DBAPI database is available.",
             "--- @return boolean",
             "local function isDBReady()",
-            "\treturn _G.DBAPI ~= nil and DBAPI.isReady()",
+            "\treturn DBAPI ~= nil and DBAPI.isReady()",
             "end",
             "",
             "$0"
@@ -106,13 +108,14 @@
             "-- =============================================================================",
             "",
             "local DB_NAMESPACE = \"${2:FS25_$1}\"",
+            "local DBAPI = g_globalMods[\"FS25_DBAPI\"]",
             "",
             "local ${1}DB = {}",
             "",
             "--- Checks if the database is available.",
             "--- @return boolean",
             "function ${1}DB.isReady()",
-            "\treturn _G.DBAPI ~= nil and DBAPI.isReady()",
+            "\treturn DBAPI ~= nil and DBAPI.isReady()",
             "end",
             "",
             "--- Saves a value to the database.",

@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 
 interface MethodDef {
     label: string;
+    description: string;
     detail: string;
     doc: string;
     snippet: string;
@@ -10,99 +11,91 @@ interface MethodDef {
 const DBAPI_METHODS: MethodDef[] = [
     {
         label: "setValue",
-        detail: "(namespace, key, value) → boolean, string|nil",
+        description: "Sauvegarder une valeur",
+        detail: "(namespace, key, value) → boolean, err",
         doc:
-            "Stores a value in the database.\n\n" +
-            "**Parameters:**\n" +
-            "- `namespace` — Your mod name (e.g. `\"FS25_MyMod\"`)\n" +
-            "- `key` — The key to store\n" +
-            "- `value` — The value (string, number, boolean, or table)\n\n" +
-            "**Returns:** `true` on success, or `false` + error message.\n\n" +
-            "**Example:**\n" +
+            "Enregistre une donnée dans la base de données.\n\n" +
+            "**Paramètres :**\n" +
+            "- `namespace` — Nom de votre mod (ex: `\"FS25_MyMod\"`)\n" +
+            "- `key` — La clé unique pour cette donnée\n" +
+            "- `value` — La valeur (nombre, texte, booléen ou table)\n\n" +
+            "**Exemple :**\n" +
             "```lua\n" +
-            'local ok, err = DBAPI.setValue("FS25_MyMod", "level", 5)\n' +
-            "if not ok then\n" +
-            '    print("Error: " .. tostring(err))\n' +
-            "end\n" +
+            'local DBAPI = g_globalMods["FS25_DBAPI"]\n' +
+            'local ok, err = DBAPI.setValue("FS25_MyMod", "money", 5000)\n' +
+            "if not ok then print(err) end\n" +
             "```",
+        
         snippet: 'setValue("${1:namespace}", "${2:key}", ${3:value})',
     },
     {
         label: "getValue",
-        detail: "(namespace, key) → any|nil, string|nil",
+        description: "Récupérer une valeur",
+        detail: "(namespace, key) → any|nil, err",
         doc:
-            "Retrieves a value from the database.\n\n" +
-            "**Parameters:**\n" +
-            "- `namespace` — Your mod name\n" +
-            "- `key` — The key to retrieve\n\n" +
-            "**Returns:** The value or `nil`, and an optional error message.\n\n" +
-            "**Example:**\n" +
+            "Récupère une donnée depuis la base de données.\n\n" +
+            "**Paramètres :**\n" +
+            "- `namespace` — Nom de votre mod\n" +
+            "- `key` — La clé à récupérer\n\n" +
+            "**Exemple :**\n" +
             "```lua\n" +
-            'local level, err = DBAPI.getValue("FS25_MyMod", "level")\n' +
-            "if level then\n" +
-            '    print("Level: " .. tostring(level))\n' +
-            "end\n" +
+            'local DBAPI = g_globalMods["FS25_DBAPI"]\n' +
+            'local val = DBAPI.getValue("FS25_MyMod", "money")\n' +
+            'if val ~= nil then print("Solde: " .. tostring(val)) end\n' +
             "```",
         snippet: 'getValue("${1:namespace}", "${2:key}")',
     },
     {
         label: "deleteValue",
-        detail: "(namespace, key) → boolean, string|nil",
+        description: "Supprimer une clé",
+        detail: "(namespace, key) → boolean, err",
         doc:
-            "Deletes a key from the database.\n\n" +
-            "**Parameters:**\n" +
-            "- `namespace` — Your mod name\n" +
-            "- `key` — The key to delete\n\n" +
-            "**Returns:** `true` on success, or `false` + error message.\n\n" +
-            "**Example:**\n" +
+            "Supprime définitivement une clé et sa valeur.\n\n" +
+            "**Paramètres :**\n" +
+            "- `namespace` — Nom de votre mod\n" +
+            "- `key` — La clé à supprimer\n\n" +
+            "**Exemple :**\n" +
             "```lua\n" +
-            'local ok, err = DBAPI.deleteValue("FS25_MyMod", "oldKey")\n' +
-            "if not ok then\n" +
-            '    print("Error: " .. tostring(err))\n' +
-            "end\n" +
+            'local ok, err = self.DBAPI.deleteValue("FS25_MyMod", "oldKey")\n' +
             "```",
         snippet: 'deleteValue("${1:namespace}", "${2:key}")',
     },
     {
         label: "listKeys",
-        detail: "(namespace) → table|nil, string|nil",
+        description: "Lister les clés d'un mod",
+        detail: "(namespace) → table|nil, err",
         doc:
-            "Lists all keys in a namespace.\n\n" +
-            "**Parameters:**\n" +
-            "- `namespace` — Your mod name\n\n" +
-            "**Returns:** A sorted array of key names, or `nil` + error message.\n\n" +
-            "**Example:**\n" +
+            "Retourne une liste triée de toutes les clés enregistrées pour un mod.\n\n" +
+            "**Exemple :**\n" +
             "```lua\n" +
-            'local keys, err = DBAPI.listKeys("FS25_MyMod")\n' +
-            "if keys then\n" +
-            "    for _, key in ipairs(keys) do\n" +
-            '        print("Key: " .. key)\n' +
-            "    end\n" +
-            "end\n" +
+            'local keys = self.DBAPI.listKeys("FS25_MyMod")\n' +
+            "for _, k in ipairs(keys or {}) do print(k) end\n" +
             "```",
         snippet: 'listKeys("${1:namespace}")',
     },
     {
         label: "isReady",
+        description: "Vérifier si la DB est prête",
         detail: "() → boolean",
         doc:
-            "Returns `true` if the database is initialized and ready to use.\n\n" +
-            "**Example:**\n" +
+            "Vérifie si la base de données est initialisée et accessible.\n\n" +
+            "**Exemple :**\n" +
             "```lua\n" +
-            "if DBAPI.isReady() then\n" +
-            '    print("Database is ready!")\n' +
+            "if self.DBAPI.isReady() then\n" +
+            '    print("Base de données opérationnelle")\n' +
             "end\n" +
             "```",
         snippet: "isReady()",
     },
     {
         label: "getVersion",
+        description: "Version de l'API",
         detail: "() → string",
         doc:
-            'Returns the API version string (e.g. `"1.0.0"`).\n\n' +
-            "**Example:**\n" +
+            "Retourne la version actuelle de DBAPI.\n\n" +
+            "**Exemple :**\n" +
             "```lua\n" +
-            'print("DBAPI version: " .. DBAPI.getVersion())\n' +
+            'print("Version : " .. self.DBAPI.getVersion())\n' +
             "```",
         snippet: "getVersion()",
     },
@@ -117,22 +110,36 @@ export class DBAPICompletionProvider implements vscode.CompletionItemProvider {
             .lineAt(position)
             .text.substring(0, position.character);
 
-        if (!linePrefix.endsWith("DBAPI.")) {
+        // Déclenche sur "DBAPI." peu importe ce qu'il y a avant (self.DBAPI, myMod.DBAPI, etc)
+        if (!linePrefix.match(/DBAPI\.$/)) {
             return undefined;
         }
 
         return DBAPI_METHODS.map((m) => {
+            // Utilisation du format riche pour le label (disponible dans les versions récentes de VS Code)
             const item = new vscode.CompletionItem(
-                m.label,
+                {
+                    label: m.label,
+                    description: m.description // Apparaît en gris clair à côté du label
+                },
                 vscode.CompletionItemKind.Method
             );
-            item.detail = `DBAPI.${m.label}${m.detail}`;
-            item.documentation = new vscode.MarkdownString(m.doc);
-            item.documentation.isTrusted = true;
+            
+            item.detail = m.detail; // Signature de la méthode
+            
+            const docs = new vscode.MarkdownString(m.doc);
+            docs.isTrusted = true;
+            docs.supportHtml = true;
+            item.documentation = docs;
+            
             item.insertText = new vscode.SnippetString(m.snippet);
-            // Keep DBAPI. completions at the top of the list
+            
+            // Priorité dans la liste
             item.sortText = `0_${m.label}`;
-            item.filterText = `DBAPI.${m.label}`;
+            
+            // Le texte filtré doit être uniquement le nom de la fonction
+            item.filterText = m.label;
+            
             return item;
         });
     }
