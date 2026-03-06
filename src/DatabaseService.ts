@@ -10,15 +10,11 @@ export interface NamespaceData {
 }
 
 /**
- * DatabaseService reads and writes DBAPI JSON files on disk.
- * Each namespace is a separate file inside the DBAPI_data directory.
+ * DatabaseService reads and writes DBAPI XML files on disk.
  */
 export class DatabaseService {
     private dataPath: string | null = null;
 
-    /**
-     * Sets the path to the DBAPI_data directory.
-     */
     setDataPath(dataPath: string): void {
         this.dataPath = dataPath;
     }
@@ -31,26 +27,24 @@ export class DatabaseService {
         return this.dataPath !== null && fs.existsSync(this.dataPath);
     }
 
-    /**
-     * Lists all namespace files in the data directory.
-     */
     getNamespaces(): string[] {
         if (!this.dataPath || !fs.existsSync(this.dataPath)) {
             return [];
         }
 
-        return fs
-            .readdirSync(this.dataPath)
-            .filter((file) => {
-                const fullPath = path.join(this.dataPath!, file);
-                return fs.statSync(fullPath).isFile();
-            })
-            .sort();
+        try {
+            return fs
+                .readdirSync(this.dataPath)
+                .filter((file) => {
+                    const fullPath = path.join(this.dataPath!, file);
+                    return fs.statSync(fullPath).isFile() && file.endsWith(".xml");
+                })
+                .sort();
+        } catch {
+            return [];
+        }
     }
 
-    /**
-     * Reads all key-value pairs from a namespace file.
-     */
     getNamespaceData(namespace: string): NamespaceData {
         if (!this.dataPath) {
             return {};
@@ -62,19 +56,25 @@ export class DatabaseService {
         }
 
         try {
-            const content = fs.readFileSync(filePath, "utf-8");
-            if (content.trim() === "") {
+            const xmlContent = fs.readFileSync(filePath, "utf-8");
+            const match = xmlContent.match(/<data>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/data>/);
+            
+            if (!match || !match[1]) {
                 return {};
             }
-            return JSON.parse(content) as NamespaceData;
-        } catch {
+
+            const jsonString = match[1].trim();
+            if (jsonString === "") {
+                return {};
+            }
+
+            return JSON.parse(jsonString) as NamespaceData;
+        } catch (err) {
+            console.error(`Error reading namespace ${namespace}:`, err);
             return {};
         }
     }
 
-    /**
-     * Writes the full namespace data to disk.
-     */
     saveNamespaceData(namespace: string, data: NamespaceData): boolean {
         if (!this.dataPath) {
             return false;
@@ -82,41 +82,65 @@ export class DatabaseService {
 
         try {
             const filePath = path.join(this.dataPath, namespace);
-            fs.writeFileSync(filePath, JSON.stringify(data), "utf-8");
+            const jsonString = JSON.stringify(data);
+            
+            const xmlContent = `<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<db>
+    <data>${jsonString.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</data>
+</db>`;
+
+            fs.writeFileSync(filePath, xmlContent, "utf-8");
             return true;
-        } catch {
+        } catch (err) {
+            console.error(`Error saving namespace ${namespace}:`, err);
             return false;
         }
     }
 
     /**
-     * Sets a single key in a namespace.
+     * Sets a value at a specific path in the namespace.
+     * @param keyPath Array of keys (e.g. ["player", "stats", "score"])
      */
-    setValue(namespace: string, key: string, value: unknown): boolean {
+    setValueAtPath(namespace: string, keyPath: string[], value: unknown): boolean {
         const data = this.getNamespaceData(namespace);
-        data[key] = value;
+        let current: any = data;
+
+        for (let i = 0; i < keyPath.length - 1; i++) {
+            const part = keyPath[i];
+            if (current[part] === undefined || typeof current[part] !== "object") {
+                current[part] = {};
+            }
+            current = current[part];
+        }
+
+        current[keyPath[keyPath.length - 1]] = value;
         return this.saveNamespaceData(namespace, data);
     }
 
     /**
-     * Deletes a key from a namespace.
+     * Deletes a key at a specific path in the namespace.
      */
-    deleteKey(namespace: string, key: string): boolean {
+    deleteKeyAtPath(namespace: string, keyPath: string[]): boolean {
         const data = this.getNamespaceData(namespace);
-        delete data[key];
+        let current: any = data;
+
+        for (let i = 0; i < keyPath.length - 1; i++) {
+            const part = keyPath[i];
+            if (current[part] === undefined || typeof current[part] !== "object") {
+                return false;
+            }
+            current = current[part];
+        }
+
+        delete current[keyPath[keyPath.length - 1]];
         return this.saveNamespaceData(namespace, data);
     }
 
-    /**
-     * Creates a new empty namespace file.
-     */
     createNamespace(namespace: string): boolean {
-        return this.saveNamespaceData(namespace, {});
+        const fileName = namespace.endsWith(".xml") ? namespace : `${namespace}.xml`;
+        return this.saveNamespaceData(fileName, {});
     }
 
-    /**
-     * Deletes a namespace file from disk.
-     */
     deleteNamespace(namespace: string): boolean {
         if (!this.dataPath) {
             return false;
@@ -133,10 +157,6 @@ export class DatabaseService {
         }
     }
 
-    /**
-     * Auto-detects savegame directories containing DBAPI_data.
-     * Scans the standard FS25 savegame location.
-     */
     autoDetectPaths(): string[] {
         const results: string[] = [];
         const home = os.homedir();
@@ -168,9 +188,7 @@ export class DatabaseService {
                         results.push(dbPath);
                     }
                 }
-            } catch {
-                // Skip directories we can't read
-            }
+            } catch { }
         }
 
         return results.sort();
