@@ -10,70 +10,6 @@ interface MethodDef {
 
 const DBAPI_METHODS: MethodDef[] = [
     {
-        label: "setValue",
-        description: "Sauvegarder une valeur",
-        detail: "(namespace, key, value) → boolean, err",
-        doc:
-            "Enregistre une donnée dans la base de données.\n\n" +
-            "**Paramètres :**\n" +
-            "- `namespace` — Nom de votre mod (ex: `\"FS25_MyMod\"`)\n" +
-            "- `key` — La clé unique pour cette donnée\n" +
-            "- `value` — La valeur (nombre, texte, booléen ou table)\n\n" +
-            "**Exemple :**\n" +
-            "```lua\n" +
-            'local DBAPI = g_globalMods["FS25_DBAPI"]\n' +
-            'local ok, err = DBAPI.setValue("FS25_MyMod", "money", 5000)\n' +
-            "if not ok then print(err) end\n" +
-            "```",
-        
-        snippet: 'setValue("${1:namespace}", "${2:key}", ${3:value})',
-    },
-    {
-        label: "getValue",
-        description: "Récupérer une valeur",
-        detail: "(namespace, key) → any|nil, err",
-        doc:
-            "Récupère une donnée depuis la base de données.\n\n" +
-            "**Paramètres :**\n" +
-            "- `namespace` — Nom de votre mod\n" +
-            "- `key` — La clé à récupérer\n\n" +
-            "**Exemple :**\n" +
-            "```lua\n" +
-            'local DBAPI = g_globalMods["FS25_DBAPI"]\n' +
-            'local val = DBAPI.getValue("FS25_MyMod", "money")\n' +
-            'if val ~= nil then print("Solde: " .. tostring(val)) end\n' +
-            "```",
-        snippet: 'getValue("${1:namespace}", "${2:key}")',
-    },
-    {
-        label: "deleteValue",
-        description: "Supprimer une clé",
-        detail: "(namespace, key) → boolean, err",
-        doc:
-            "Supprime définitivement une clé et sa valeur.\n\n" +
-            "**Paramètres :**\n" +
-            "- `namespace` — Nom de votre mod\n" +
-            "- `key` — La clé à supprimer\n\n" +
-            "**Exemple :**\n" +
-            "```lua\n" +
-            'local ok, err = self.DBAPI.deleteValue("FS25_MyMod", "oldKey")\n' +
-            "```",
-        snippet: 'deleteValue("${1:namespace}", "${2:key}")',
-    },
-    {
-        label: "listKeys",
-        description: "Lister les clés d'un mod",
-        detail: "(namespace) → table|nil, err",
-        doc:
-            "Retourne une liste triée de toutes les clés enregistrées pour un mod.\n\n" +
-            "**Exemple :**\n" +
-            "```lua\n" +
-            'local keys = self.DBAPI.listKeys("FS25_MyMod")\n' +
-            "for _, k in ipairs(keys or {}) do print(k) end\n" +
-            "```",
-        snippet: 'listKeys("${1:namespace}")',
-    },
-    {
         label: "isReady",
         description: "Vérifier si la DB est prête",
         detail: "() → boolean",
@@ -99,6 +35,140 @@ const DBAPI_METHODS: MethodDef[] = [
             "```",
         snippet: "getVersion()",
     },
+    {
+        label: "bind",
+        description: "Lier un namespace (ORM)",
+        detail: "(namespace) → instance ORM",
+        doc:
+            "Crée une instance ORM liée à un namespace.\n\n" +
+            "**Paramètres :**\n" +
+            "- `namespace` — Nom de votre mod (ex: `\"FS25_MyMod\"`)\n\n" +
+            "**Exemple :**\n" +
+            "```lua\n" +
+            'local db = DBAPI.bind("FS25_MyMod")\n' +
+            'db:define("Player", { fields = { name = { type = "string" } } })\n' +
+            "```",
+        snippet: 'bind("${1:FS25_MyMod}")',
+    },
+    {
+        label: "hasORM",
+        description: "Vérifier la disponibilité ORM",
+        detail: "() → boolean",
+        doc:
+            "Retourne true si les fonctionnalités ORM sont disponibles.\n\n" +
+            "**Exemple :**\n" +
+            "```lua\n" +
+            "if DBAPI.hasORM() then\n" +
+            '    local db = DBAPI.bind("FS25_MyMod")\n' +
+            "end\n" +
+            "```",
+        snippet: "hasORM()",
+    },
+];
+
+const ORM_INSTANCE_METHODS: MethodDef[] = [
+    {
+        label: "define",
+        description: "Définir un modèle",
+        detail: "(modelName, definition) → schema, err",
+        doc:
+            "Définit un modèle ORM avec ses champs.\n\n" +
+            "**Exemple :**\n" +
+            "```lua\n" +
+            'db:define("Player", {\n' +
+            "    fields = {\n" +
+            '        name = { type = "string", required = true },\n' +
+            '        money = { type = "number", default = 0 }\n' +
+            "    }\n" +
+            "})\n" +
+            "```",
+        snippet: 'define("${1:Model}", { fields = { ${2} } })',
+    },
+    {
+        label: "create",
+        description: "Créer un enregistrement",
+        detail: "(modelName, data) → record, err",
+        doc:
+            "Crée un nouvel enregistrement pour le modèle spécifié.\n\n" +
+            "**Exemple :**\n" +
+            "```lua\n" +
+            'local record, err = db:create("Player", { name = "John", money = 1000 })\n' +
+            "```",
+        snippet: 'create("${1:Model}", { ${2} })',
+    },
+    {
+        label: "find",
+        description: "Chercher un enregistrement",
+        detail: "(modelName, query) → record, err",
+        doc:
+            "Trouve le premier enregistrement correspondant à la requête.\n\n" +
+            "**Exemple :**\n" +
+            "```lua\n" +
+            'local player = db:find("Player", { where = { name = "John" } })\n' +
+            "```",
+        snippet: 'find("${1:Model}", { where = { ${2} } })',
+    },
+    {
+        label: "findAll",
+        description: "Chercher tous les enregistrements",
+        detail: "(modelName, query) → table, err",
+        doc:
+            "Trouve tous les enregistrements correspondant à la requête.\n\n" +
+            "**Exemple :**\n" +
+            "```lua\n" +
+            'local players = db:findAll("Player", { where = { level = 5 } })\n' +
+            "for _, p in ipairs(players) do print(p.name) end\n" +
+            "```",
+        snippet: 'findAll("${1:Model}", { where = { ${2} } })',
+    },
+    {
+        label: "findById",
+        description: "Chercher par ID",
+        detail: "(modelName, id) → record, err",
+        doc:
+            "Trouve un enregistrement par son identifiant unique.\n\n" +
+            "**Exemple :**\n" +
+            "```lua\n" +
+            'local player = db:findById("Player", 1)\n' +
+            "```",
+        snippet: 'findById("${1:Model}", ${2:id})',
+    },
+    {
+        label: "update",
+        description: "Mettre à jour un enregistrement",
+        detail: "(modelName, id, data) → record, err",
+        doc:
+            "Met à jour un enregistrement existant par son ID.\n\n" +
+            "**Exemple :**\n" +
+            "```lua\n" +
+            'local updated, err = db:update("Player", 1, { money = 5000 })\n' +
+            "```",
+        snippet: 'update("${1:Model}", ${2:id}, { ${3} })',
+    },
+    {
+        label: "delete",
+        description: "Supprimer un enregistrement",
+        detail: "(modelName, id) → boolean, err",
+        doc:
+            "Supprime un enregistrement par son ID.\n\n" +
+            "**Exemple :**\n" +
+            "```lua\n" +
+            'local ok, err = db:delete("Player", 1)\n' +
+            "```",
+        snippet: 'delete("${1:Model}", ${2:id})',
+    },
+    {
+        label: "count",
+        description: "Compter les enregistrements",
+        detail: "(modelName, query) → number, err",
+        doc:
+            "Compte les enregistrements correspondant à la requête.\n\n" +
+            "**Exemple :**\n" +
+            "```lua\n" +
+            'local n = db:count("Player", { where = { level = 5 } })\n' +
+            "```",
+        snippet: 'count("${1:Model}", { where = { ${2} } })',
+    },
 ];
 
 export class DBAPICompletionProvider implements vscode.CompletionItemProvider {
@@ -110,36 +180,46 @@ export class DBAPICompletionProvider implements vscode.CompletionItemProvider {
             .lineAt(position)
             .text.substring(0, position.character);
 
-        // Déclenche sur "DBAPI." peu importe ce qu'il y a avant (self.DBAPI, myMod.DBAPI, etc)
-        if (!linePrefix.match(/DBAPI\.$/)) {
-            return undefined;
+        // Trigger on "DBAPI." — returns global DBAPI methods
+        if (linePrefix.match(/DBAPI\.$/)) {
+            return this.buildCompletions(DBAPI_METHODS);
         }
 
-        return DBAPI_METHODS.map((m) => {
-            // Utilisation du format riche pour le label (disponible dans les versions récentes de VS Code)
+        // Trigger on "varName:" — check if varName is bound via DBAPI.bind()
+        const colonMatch = linePrefix.match(/(\w+):$/);
+        if (colonMatch) {
+            const varName = colonMatch[1];
+            const fullText = document.getText();
+            const bindPattern = new RegExp(`local\\s+${varName}\\s*=\\s*\\S*\\.?bind\\s*\\(`);
+            if (bindPattern.test(fullText)) {
+                return this.buildCompletions(ORM_INSTANCE_METHODS);
+            }
+        }
+
+        return undefined;
+    }
+
+    private buildCompletions(methods: MethodDef[]): vscode.CompletionItem[] {
+        return methods.map((m) => {
             const item = new vscode.CompletionItem(
                 {
                     label: m.label,
-                    description: m.description // Apparaît en gris clair à côté du label
+                    description: m.description,
                 },
                 vscode.CompletionItemKind.Method
             );
-            
-            item.detail = m.detail; // Signature de la méthode
-            
+
+            item.detail = m.detail;
+
             const docs = new vscode.MarkdownString(m.doc);
             docs.isTrusted = true;
             docs.supportHtml = true;
             item.documentation = docs;
-            
+
             item.insertText = new vscode.SnippetString(m.snippet);
-            
-            // Priorité dans la liste
             item.sortText = `0_${m.label}`;
-            
-            // Le texte filtré doit être uniquement le nom de la fonction
             item.filterText = m.label;
-            
+
             return item;
         });
     }

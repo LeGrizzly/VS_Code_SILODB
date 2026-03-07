@@ -1,11 +1,4 @@
 {
-    "DBAPI: Namespace constant": {
-        "prefix": "dbns",
-        "body": [
-            "local ${1:MY_NAMESPACE} = \"${2:FS25_MyMod}\""
-        ],
-        "description": "Declare a DBAPI namespace constant for your mod"
-    },
     "DBAPI: Check availability": {
         "prefix": "dbcheck",
         "body": [
@@ -20,150 +13,175 @@
         "prefix": "dbinit",
         "body": [
             "--- DBAPI integration for ${1:MyMod}",
-            "local DB_NAMESPACE = \"${2:FS25_$1}\"",
             "local DBAPI = g_globalMods[\"FS25_DBAPI\"]",
-            "",
-            "--- Checks if the DBAPI database is available.",
-            "--- @return boolean",
-            "local function isDBReady()",
-            "\treturn DBAPI ~= nil and DBAPI.isReady()",
-            "end",
+            "if not DBAPI or not DBAPI.isReady() then return end",
+            "local ${2:db} = DBAPI.bind(\"${3:FS25_$1}\")",
             "",
             "$0"
         ],
-        "description": "Full DBAPI initialization pattern with namespace and helper"
+        "description": "Full DBAPI initialization pattern with bind()"
     },
-    "DBAPI: Set value": {
-        "prefix": "dbset",
+    "DBAPI ORM: Bind namespace": {
+        "prefix": "dbbind",
         "body": [
-            "local ok, err = DBAPI.setValue(${1:DB_NAMESPACE}, \"${2:key}\", ${3:value})",
-            "if not ok then",
-            "\tprint(\"${4:MyMod} Error: \" .. tostring(err))",
-            "end"
+            "local ${1:db} = DBAPI.bind(\"${2:FS25_MyMod}\")"
         ],
-        "description": "Store a value in DBAPI with error handling"
+        "description": "Create an ORM instance bound to a namespace"
     },
-    "DBAPI: Get value": {
-        "prefix": "dbget",
+    "DBAPI ORM: Define model": {
+        "prefix": "dbdefine",
         "body": [
-            "local ${1:value}, err = DBAPI.getValue(${2:DB_NAMESPACE}, \"${3:key}\")",
+            "local schema, err = ${1:db}:define(\"${2:Model}\", {",
+            "\tfields = {",
+            "\t\t${3:name} = { type = \"${4:string}\", required = ${5:true} },",
+            "\t\t${6:value} = { type = \"${7:number}\", default = ${8:0} },",
+            "\t\t$0",
+            "\t}",
+            "})",
             "if err then",
-            "\tprint(\"${4:MyMod} Error: \" .. tostring(err))",
+            "\tprint(\"Define error: \" .. tostring(err))",
             "end"
         ],
-        "description": "Retrieve a value from DBAPI with error handling"
+        "description": "Define an ORM model with typed fields"
     },
-    "DBAPI: Delete value": {
-        "prefix": "dbdelete",
+    "DBAPI ORM: Create record": {
+        "prefix": "dbcreateorm",
         "body": [
-            "local ok, err = DBAPI.deleteValue(${1:DB_NAMESPACE}, \"${2:key}\")",
-            "if not ok then",
-            "\tprint(\"${3:MyMod} Error: \" .. tostring(err))",
-            "end"
-        ],
-        "description": "Delete a key from DBAPI with error handling"
-    },
-    "DBAPI: List keys": {
-        "prefix": "dblist",
-        "body": [
-            "local keys, err = DBAPI.listKeys(${1:DB_NAMESPACE})",
+            "local record, err = ${1:db}:create(\"${2:Model}\", {",
+            "\t${3:field} = ${4:value},",
+            "\t$0",
+            "})",
             "if err then",
-            "\tprint(\"${2:MyMod} Error: \" .. tostring(err))",
-            "elseif keys then",
-            "\tfor _, key in ipairs(keys) do",
-            "\t\tlocal val = DBAPI.getValue($1, key)",
+            "\tprint(\"Create error: \" .. tostring(err))",
+            "end"
+        ],
+        "description": "Create an ORM record with error handling"
+    },
+    "DBAPI ORM: Find all": {
+        "prefix": "dbfindall",
+        "body": [
+            "local ${1:records}, err = ${2:db}:findAll(\"${3:Model}\", {",
+            "\twhere = { ${4:field} = ${5:value} }",
+            "})",
+            "if err then",
+            "\tprint(\"FindAll error: \" .. tostring(err))",
+            "elseif $1 then",
+            "\tfor _, record in ipairs($1) do",
             "\t\t$0",
             "\tend",
             "end"
         ],
-        "description": "List and iterate all keys in a DBAPI namespace"
+        "description": "Find all ORM records matching a query and iterate"
     },
-    "DBAPI: Load with default": {
-        "prefix": "dbload",
+    "DBAPI ORM: Find by ID": {
+        "prefix": "dbfindbyid",
         "body": [
-            "local ${1:value} = DBAPI.getValue(${2:DB_NAMESPACE}, \"${3:key}\")",
-            "if $1 == nil then",
-            "\t$1 = ${4:defaultValue}",
+            "local ${1:record}, err = ${2:db}:findById(\"${3:Model}\", ${4:id})",
+            "if err then",
+            "\tprint(\"FindById error: \" .. tostring(err))",
+            "elseif $1 then",
+            "\t$0",
             "end"
         ],
-        "description": "Load a value from DBAPI with a fallback default"
+        "description": "Find an ORM record by ID with guard"
     },
-    "DBAPI: Save with log": {
-        "prefix": "dbsave",
+    "DBAPI ORM: Update record": {
+        "prefix": "dbupdateorm",
         "body": [
-            "local ok, err = DBAPI.setValue(${1:DB_NAMESPACE}, \"${2:key}\", ${3:value})",
-            "if ok then",
-            "\tprint(string.format(\"${4:MyMod}: Saved %s = %s\", \"$2\", tostring($3)))",
-            "else",
-            "\tprint(string.format(\"${4:MyMod} Error saving %s: %s\", \"$2\", tostring(err)))",
+            "local updated, err = ${1:db}:update(\"${2:Model}\", ${3:id}, {",
+            "\t${4:field} = ${5:value},",
+            "\t$0",
+            "})",
+            "if err then",
+            "\tprint(\"Update error: \" .. tostring(err))",
             "end"
         ],
-        "description": "Save a value to DBAPI with success/error logging"
+        "description": "Update an ORM record with error handling"
     },
-    "DBAPI: Full CRUD scaffold": {
-        "prefix": "dbcrud",
+    "DBAPI ORM: Delete record": {
+        "prefix": "dbremove",
+        "body": [
+            "local ok, err = ${1:db}:delete(\"${2:Model}\", ${3:id})",
+            "if not ok then",
+            "\tprint(\"Delete error: \" .. tostring(err))",
+            "end"
+        ],
+        "description": "Delete an ORM record with error handling"
+    },
+    "DBAPI ORM: Query with options": {
+        "prefix": "dbquery",
+        "body": [
+            "local ${1:results}, err = ${2:db}:findAll(\"${3:Model}\", {",
+            "\twhere = {",
+            "\t\t${4:field} = ${5:value},",
+            "\t},",
+            "\torderBy = \"${6:id}\",",
+            "\tlimit = ${7:10},",
+            "})",
+            "if err then",
+            "\tprint(\"Query error: \" .. tostring(err))",
+            "end"
+        ],
+        "description": "Complete ORM query with where, orderBy, and limit"
+    },
+    "DBAPI ORM: Full CRUD module": {
+        "prefix": "dbormcrud",
         "body": [
             "-- =============================================================================",
-            "-- ${1:MyMod} - DBAPI Integration",
+            "-- ${1:MyMod} - DBAPI ORM Integration",
             "-- =============================================================================",
             "",
-            "local DB_NAMESPACE = \"${2:FS25_$1}\"",
             "local DBAPI = g_globalMods[\"FS25_DBAPI\"]",
+            "local db = DBAPI.bind(\"${2:FS25_$1}\")",
             "",
-            "local ${1}DB = {}",
-            "",
-            "--- Checks if the database is available.",
-            "--- @return boolean",
-            "function ${1}DB.isReady()",
-            "\treturn DBAPI ~= nil and DBAPI.isReady()",
+            "--- Initialize ORM models.",
+            "local function initModels()",
+            "\tlocal schema, err = db:define(\"${3:Model}\", {",
+            "\t\tfields = {",
+            "\t\t\t${4:name} = { type = \"string\", required = true },",
+            "\t\t\t${5:value} = { type = \"number\", default = 0 },",
+            "\t\t}",
+            "\t})",
+            "\tif err then print(\"$1: Schema error: \" .. tostring(err)) end",
             "end",
             "",
-            "--- Saves a value to the database.",
-            "--- @param key string",
-            "--- @param value any",
-            "--- @return boolean success",
-            "function ${1}DB.save(key, value)",
-            "\tif not ${1}DB.isReady() then return false end",
-            "\tlocal ok, err = DBAPI.setValue(DB_NAMESPACE, key, value)",
-            "\tif not ok then",
-            "\t\tprint(\"$1 DB Error: \" .. tostring(err))",
-            "\tend",
+            "--- Create a new record.",
+            "local function createRecord(data)",
+            "\tlocal record, err = db:create(\"$3\", data)",
+            "\tif err then print(\"$1: Create error: \" .. tostring(err)) end",
+            "\treturn record",
+            "end",
+            "",
+            "--- Find a record by ID.",
+            "local function findRecord(id)",
+            "\tlocal record, err = db:findById(\"$3\", id)",
+            "\tif err then print(\"$1: Find error: \" .. tostring(err)) end",
+            "\treturn record",
+            "end",
+            "",
+            "--- Update a record.",
+            "local function updateRecord(id, data)",
+            "\tlocal record, err = db:update(\"$3\", id, data)",
+            "\tif err then print(\"$1: Update error: \" .. tostring(err)) end",
+            "\treturn record",
+            "end",
+            "",
+            "--- Delete a record.",
+            "local function deleteRecord(id)",
+            "\tlocal ok, err = db:delete(\"$3\", id)",
+            "\tif not ok then print(\"$1: Delete error: \" .. tostring(err)) end",
             "\treturn ok",
-            "end",
-            "",
-            "--- Loads a value from the database.",
-            "--- @param key string",
-            "--- @param default any|nil Fallback value if key not found",
-            "--- @return any",
-            "function ${1}DB.load(key, default)",
-            "\tif not ${1}DB.isReady() then return default end",
-            "\tlocal value = DBAPI.getValue(DB_NAMESPACE, key)",
-            "\tif value == nil then return default end",
-            "\treturn value",
-            "end",
-            "",
-            "--- Removes a key from the database.",
-            "--- @param key string",
-            "--- @return boolean success",
-            "function ${1}DB.remove(key)",
-            "\tif not ${1}DB.isReady() then return false end",
-            "\tlocal ok, err = DBAPI.deleteValue(DB_NAMESPACE, key)",
-            "\tif not ok then",
-            "\t\tprint(\"$1 DB Error: \" .. tostring(err))",
-            "\tend",
-            "\treturn ok",
-            "end",
-            "",
-            "--- Lists all stored keys.",
-            "--- @return table keys",
-            "function ${1}DB.listAll()",
-            "\tif not ${1}DB.isReady() then return {} end",
-            "\tlocal keys = DBAPI.listKeys(DB_NAMESPACE)",
-            "\treturn keys or {}",
             "end",
             "",
             "$0"
         ],
-        "description": "Complete CRUD wrapper module for DBAPI integration"
+        "description": "Complete ORM CRUD module with init, create, find, update, delete"
+    },
+    "DBAPI ORM: Field definition": {
+        "prefix": "dbfield",
+        "body": [
+            "${1:fieldName} = { type = \"${2:string}\"${3:, required = ${4:true}}${5:, default = ${6:nil}} }"
+        ],
+        "description": "Define a single ORM field with type, required, and default"
     }
 }

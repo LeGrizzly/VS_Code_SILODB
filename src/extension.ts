@@ -49,7 +49,7 @@ export function activate(context: vscode.ExtensionContext): void {
         vscode.languages.registerCompletionItemProvider(
             { language: "lua" },
             new DBAPICompletionProvider(),
-            "."
+            ".", ":"
         )
     );
 

@@ -10,6 +10,33 @@ export interface NamespaceData {
 }
 
 /**
+ * Parsed ORM filename components.
+ */
+export interface OrmFileParts {
+    namespace: string;
+    type: "schema" | "data";
+    modelName: string;
+}
+
+/**
+ * Information about an ORM model (schema + data files).
+ */
+export interface OrmModelInfo {
+    modelName: string;
+    schemaFile: string;
+    dataFile: string;
+}
+
+/**
+ * A namespace grouped with its ORM models and plain KV files.
+ */
+export interface OrmNamespaceInfo {
+    namespace: string;
+    models: OrmModelInfo[];
+    kvFiles: string[];
+}
+
+/**
  * DatabaseService reads and writes DBAPI XML files on disk.
  */
 export class DatabaseService {
@@ -155,6 +182,100 @@ export class DatabaseService {
         } catch {
             return false;
         }
+    }
+
+    /**
+     * Parses an ORM filename into its components.
+     * Expected format: `Namespace__schema_ModelName.xml` or `Namespace__data_ModelName.xml`
+     */
+    parseOrmFilename(filename: string): OrmFileParts | null {
+        const match = filename.match(/^(.+)__(schema|data)_(.+)\.xml$/);
+        if (!match) {
+            return null;
+        }
+        return {
+            namespace: match[1],
+            type: match[2] as "schema" | "data",
+            modelName: match[3],
+        };
+    }
+
+    /**
+     * Groups all XML files by namespace, classifying ORM vs KV files.
+     */
+    getGroupedNamespaces(): OrmNamespaceInfo[] {
+        const files = this.getNamespaces();
+        const groups = new Map<string, { models: Map<string, { schema?: string; data?: string }>; kvFiles: string[] }>();
+
+        for (const file of files) {
+            const parsed = this.parseOrmFilename(file);
+            if (parsed) {
+                const baseNs = parsed.namespace + ".xml";
+                if (!groups.has(baseNs)) {
+                    groups.set(baseNs, { models: new Map(), kvFiles: [] });
+                }
+                const group = groups.get(baseNs)!;
+                if (!group.models.has(parsed.modelName)) {
+                    group.models.set(parsed.modelName, {});
+                }
+                const model = group.models.get(parsed.modelName)!;
+                if (parsed.type === "schema") {
+                    model.schema = file;
+                } else {
+                    model.data = file;
+                }
+            } else {
+                if (!groups.has(file)) {
+                    groups.set(file, { models: new Map(), kvFiles: [] });
+                }
+                groups.get(file)!.kvFiles.push(file);
+            }
+        }
+
+        const result: OrmNamespaceInfo[] = [];
+        for (const [namespace, group] of groups) {
+            const models: OrmModelInfo[] = [];
+            for (const [modelName, files] of group.models) {
+                if (files.schema && files.data) {
+                    models.push({
+                        modelName,
+                        schemaFile: files.schema,
+                        dataFile: files.data,
+                    });
+                }
+            }
+            result.push({
+                namespace,
+                models: models.sort((a, b) => a.modelName.localeCompare(b.modelName)),
+                kvFiles: group.kvFiles,
+            });
+        }
+
+        return result.sort((a, b) => a.namespace.localeCompare(b.namespace));
+    }
+
+    /**
+     * Reads ORM schema definition from a schema file.
+     */
+    getOrmSchema(schemaFile: string): Record<string, unknown> | null {
+        const data = this.getNamespaceData(schemaFile);
+        if (data && typeof data.__schema === "object" && data.__schema !== null) {
+            return data.__schema as Record<string, unknown>;
+        }
+        return null;
+    }
+
+    /**
+     * Reads ORM records from a data file.
+     */
+    getOrmRecords(dataFile: string): Record<string, unknown>[] {
+        const data = this.getNamespaceData(dataFile);
+        if (!data || !data.__records || typeof data.__records !== "object") {
+            return [];
+        }
+        // Records are stored as a map keyed by stringified IDs, not an array
+        const records = data.__records as Record<string, unknown>;
+        return Object.values(records) as Record<string, unknown>[];
     }
 
     autoDetectPaths(): string[] {
