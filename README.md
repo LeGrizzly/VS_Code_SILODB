@@ -91,3 +91,31 @@ src/
 ```
 
 The extension reads/writes the same JSON files that the FS25 SILODB mod uses, so changes are immediately visible in-game after a reload.
+
+---
+
+## Feedback
+
+Your feedback is invaluable as we cultivate this project. Please feel free to raise an issue on this repository to report bugs or suggest new features.
+
+---
+
+## Credits
+- **Author**: LeGrizzly
+- **Version**: 2.0.2
+
+---
+
+## 📝 License
+
+This mod is licensed under **[CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/)**.
+
+You may share it in its original form with attribution. You may not sell it, modify and redistribute it, or reupload it under a different name or authorship. Contributions via pull request are explicitly permitted and encouraged.
+
+---
+
+## ☕ Support
+
+If you enjoy this mod and want to support my work, consider buying me a coffee!
+<br><br>
+<a href="https://buymeacoffee.com/legrizzly"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" width="150" alt="Buy Me A Coffee" /></a>
